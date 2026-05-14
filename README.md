@@ -10,6 +10,170 @@ Build a Model Context Protocol (MCP) server using FastMCP that exposes a small d
 
 You must also expose the database schema as an MCP resource, test the server with Inspector or equivalent tooling, and show the server working from at least one MCP client.
 
+## Current Implementation
+
+This repository includes a working SQLite + FastMCP implementation under `implementation/`.
+
+```text
+implementation/
+  db.py              # SQLite adapter with validation and safe parameter binding
+  init_db.py         # reproducible schema and seed data
+  mcp_server.py      # FastMCP tools and resources
+  verify_server.py   # repeatable verification script
+```
+
+The sample database contains:
+
+- `students`
+- `courses`
+- `enrollments`
+
+## Setup
+
+Recommended: use a virtual environment so FastMCP dependencies do not affect other Python projects.
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+```
+
+Initialize the SQLite database:
+
+```powershell
+python implementation\init_db.py
+```
+
+Start the MCP server over stdio:
+
+```powershell
+python implementation\mcp_server.py
+```
+
+## Tools
+
+The server exposes exactly three tools:
+
+- `search`: search rows with optional filters, column selection, ordering, limit, and offset
+- `insert`: insert one row and return the inserted payload
+- `aggregate`: run `count`, `avg`, `sum`, `min`, or `max`, optionally grouped by columns
+
+Example filter shapes:
+
+```json
+{"cohort": "A1"}
+```
+
+```json
+[{"column": "score", "op": "gte", "value": 85}]
+```
+
+Supported filter operators:
+
+- `eq`, `ne`, `gt`, `gte`, `lt`, `lte`
+- `like`
+- `in`
+- `is_null`, `not_null`
+
+## Resources
+
+The server exposes schema context as MCP resources:
+
+- `schema://database`
+- `schema://table/{table_name}`
+
+Examples:
+
+- `schema://table/students`
+- `schema://table/courses`
+- `schema://table/enrollments`
+
+## Verification
+
+Run the repeatable verification script:
+
+```powershell
+python implementation\verify_server.py
+```
+
+The script verifies:
+
+- database initialization
+- tool discovery for `search`, `insert`, and `aggregate`
+- schema resource discovery
+- schema resource template discovery
+- valid `search`, `insert`, and `aggregate` calls
+- invalid requests for unknown tables, unknown columns, bad aggregate metrics, and empty inserts
+
+Expected ending:
+
+```text
+[ok] database reset after verification
+```
+
+## MCP Client Integration
+
+This repo includes a project-scoped Claude Code MCP config in `.mcp.json`.
+
+Verify Claude can see the server:
+
+```powershell
+claude mcp list
+claude mcp get sqlite-lab
+```
+
+Verified local result:
+
+```text
+sqlite-lab: C:\Users\mlodt\miniconda3\python.exe C:\VinuniLabs\Day26-Track3-MCP-tool-integration\implementation\mcp_server.py - Connected
+```
+
+The same server is also verified with a lightweight MCP Python client:
+
+```powershell
+python implementation\client_smoke.py
+```
+
+Expected output includes:
+
+```text
+tools: ['search', 'insert', 'aggregate']
+resources: ['schema://database']
+resource templates: ['schema://table/{table_name}']
+```
+
+If you move the repository or use a different Python interpreter, update `.mcp.json` to point to the new absolute paths.
+
+## Demo
+
+Use [DEMO.md](DEMO.md) as the short demo checklist. It covers setup, verification, MCP client smoke test, and Claude Code connection status.
+
+Use [DEMO_SCRIPT_VI.md](DEMO_SCRIPT_VI.md) as the Vietnamese presentation script.
+
+A generated silent Vietnamese MP4 demo is available at:
+
+```text
+demo_assets/sqlite_mcp_lab_demo_vi.mp4
+```
+
+The English version is available at:
+
+```text
+demo_assets/sqlite_mcp_lab_demo.mp4
+```
+
+Regenerate the Vietnamese video with:
+
+```powershell
+python demo_assets\create_demo_video_vi.py
+```
+
+Regenerate the English video with:
+
+```powershell
+python demo_assets\create_demo_video.py
+```
+
 ## Learning Outcomes
 
 By the end of this lab, students should be able to:
